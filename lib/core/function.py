@@ -33,12 +33,11 @@ def train(config, train_loader, dataset, converter, model, criterion, optimizer,
     model.train()
 
     end = time.time()
-    for i, (inp, idx) in enumerate(train_loader):
+    for i, (images, labels) in enumerate(train_loader):
         # measure data time
         data_time.update(time.time() - end)
 
-        labels = utils.get_batch_label(dataset, idx)
-        inp = inp.to(device)
+        inp = images.to(device)
 
         # inference
         preds = model(inp).cpu()

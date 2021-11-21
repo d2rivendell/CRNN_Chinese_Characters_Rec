@@ -18,6 +18,7 @@ class AlignCollate(object):
         self.imgW = imgW
         self.config = config
         self.keep_ratio = keep_ratio
+        self.min_ratio = min_ratio
 
     def __call__(self, batch):
         images, labels = zip(*batch)
@@ -34,10 +35,11 @@ class AlignCollate(object):
             imgW = int(np.floor(max_ratio * imgH)) # 宽度取到最宽的（下面resizeNormalize会对宽度不足imgW的图片进行填充）
             imgW = max(imgH * self.min_ratio, imgW)  # assure imgH >= imgW
 
-        resizeNormalize = ResizeNormalize(self.config, imgW, imgH)
+        resizeNormalize = ResizeNormalize(self.config, (imgW, imgH))
         # 注意在AlignCollate中返回的是张量，dataset类中返回的可以是numpy矩阵
         # resize再转成Tensor
         images = [transforms.ToTensor()(resizeNormalize(image)) for image in images]
+        # image的shape为[h,w],需要扩展为 [chanel, h, w]
         images = torch.cat([t.unsqueeze(0) for t in images], 0)
 
         return images, labels

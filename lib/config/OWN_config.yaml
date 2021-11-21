@@ -1,5 +1,5 @@
 GPUID: 0
-WORKERS: 1
+WORKERS: 0
 PRINT_FREQ: 10
 SAVE_FREQ: 10
 PIN_MEMORY: False
@@ -12,8 +12,9 @@ CUDNN:
 
 DATASET:
   DATASET: OWN
-  ROOT: "H:/DL-DATASET/360M/images"
-  BASE_DIR: ["hand", "line", "handsignature"]
+  ROOT: "D:/ML/data/OCR/ocr-data (github.com-chineseocr)"
+  CHAR_FILE: 'lib/dataset/txt/char_std_5990.txt'
+  BASE_DIR: ["handsignature"]
   SCALE_FACTOR: 0.25
   ROT_FACTOR: 30
   STD: 0.193
@@ -51,7 +52,7 @@ TEST:
 MODEL:
   NAME: 'crnn'
   IMAGE_SIZE:
-    W: 280.
+    W: 280
     H: 32
   NUM_CLASSES: 0
   NUM_HIDDEN: 256

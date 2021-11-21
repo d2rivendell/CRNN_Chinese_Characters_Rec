@@ -25,8 +25,8 @@ def parse_arg():
     args = parser.parse_args()
 
     with open(args.cfg, 'r') as f:
-        # config = yaml.load(f, Loader=yaml.FullLoader)
-        config = yaml.load(f)
+        config = yaml.load(f, Loader=yaml.FullLoader)
+        # config = yaml.load(f)
         config = edict(config)
 
     config.DATASET.ALPHABETS = alphabets.alphabet
@@ -117,14 +117,14 @@ def main():
 
     trainP, testP = train_test_split(all_list, test_size=0.1)  ##此处未考虑字符平衡划分
     train_dataset = _OWN(config, trainP)
-    val_dataset = _OWN(config, trainP)
+    val_dataset = _OWN(config, testP)
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
         shuffle=config.TRAIN.SHUFFLE,
         num_workers=config.WORKERS,
         pin_memory=config.PIN_MEMORY,
-        collate_fn=AlignCollate,
+        collate_fn=AlignCollate(config, config.MODEL.IMAGE_SIZE.H, config.MODEL.IMAGE_SIZE.W),
     )
 
     val_loader = DataLoader(
@@ -133,7 +133,7 @@ def main():
         shuffle=config.TEST.SHUFFLE,
         num_workers=config.WORKERS,
         pin_memory=config.PIN_MEMORY,
-        collate_fn=AlignCollate,
+        collate_fn=AlignCollate(config, config.MODEL.IMAGE_SIZE.H, config.MODEL.IMAGE_SIZE.W),
     )
 
     best_acc = 0.5

@@ -64,7 +64,10 @@ class CRNN(nn.Module):
             BidirectionalLSTM(nh, nh, nclass))
 
     def forward(self, input):
-
+        """
+        :param input: (batchSize, ch, h, w)
+        :return:
+        """
         # conv features
         conv = self.cnn(input)
         b, c, h, w = conv.size()
