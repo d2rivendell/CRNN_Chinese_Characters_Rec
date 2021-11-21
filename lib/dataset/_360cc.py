@@ -4,6 +4,7 @@ import os
 import numpy as np
 import cv2
 
+# 该数据集比较单一，且都是白底黑字，对非黑色的字体或者背景不是白色的识别几乎是失败的
 class _360CC(data.Dataset):
     def __init__(self, config, is_train=True):
 
@@ -46,12 +47,14 @@ class _360CC(data.Dataset):
 
         img_h, img_w = img.shape
 
+        # 对数据集的高度进行压缩或者拉伸到32，宽度由280->260
+        # 因为训练的高度本来就是32，高度没有压缩，但是宽度压缩了！！！宽高的压缩是不等的，验证的时候需要特别注意
         img = cv2.resize(img, (0,0), fx=self.inp_w / img_w, fy=self.inp_h / img_h, interpolation=cv2.INTER_CUBIC)
         img = np.reshape(img, (self.inp_h, self.inp_w, 1))
 
         img = img.astype(np.float32)
         img = (img/255. - self.mean) / self.std
-        img = img.transpose([2, 0, 1])
+        img = img.transpose([2, 0, 1]) # 变成（通道数，高度，宽度）
 
         return img, idx
 

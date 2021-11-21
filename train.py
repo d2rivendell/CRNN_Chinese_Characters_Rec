@@ -11,8 +11,11 @@ from lib.dataset import get_dataset
 from lib.core import function
 import lib.config.alphabets as alphabets
 from lib.utils.utils import model_info
-
+from lib.dataset.AlignCollate import AlignCollate
 from tensorboardX import SummaryWriter
+from sklearn.model_selection import train_test_split
+from lib.dataset.dataProcessor import getData
+from lib.dataset._own import _OWN
 
 def parse_arg():
     parser = argparse.ArgumentParser(description="train crnn")
@@ -110,22 +113,27 @@ def main():
             model.load_state_dict(checkpoint)
 
     model_info(model)
-    train_dataset = get_dataset(config)(config, is_train=True)
+    all_list = getData(config)
+
+    trainP, testP = train_test_split(all_list, test_size=0.1)  ##此处未考虑字符平衡划分
+    train_dataset = _OWN(config, trainP)
+    val_dataset = _OWN(config, trainP)
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
         shuffle=config.TRAIN.SHUFFLE,
         num_workers=config.WORKERS,
         pin_memory=config.PIN_MEMORY,
+        collate_fn=AlignCollate,
     )
 
-    val_dataset = get_dataset(config)(config, is_train=False)
     val_loader = DataLoader(
         dataset=val_dataset,
         batch_size=config.TEST.BATCH_SIZE_PER_GPU,
         shuffle=config.TEST.SHUFFLE,
         num_workers=config.WORKERS,
         pin_memory=config.PIN_MEMORY,
+        collate_fn=AlignCollate,
     )
 
     best_acc = 0.5

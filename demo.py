@@ -40,16 +40,23 @@ def recognition(config, img, model, converter, device):
     h, w = img.shape
     w_cur = int(img.shape[1] / (config.MODEL.IMAGE_SIZE.OW / config.MODEL.IMAGE_SIZE.W))
     img = cv2.resize(img, (0, 0), fx=w_cur / w, fy=1.0, interpolation=cv2.INTER_CUBIC)
-    img = np.reshape(img, (config.MODEL.IMAGE_SIZE.H, w_cur, 1))
 
     # normalize
-    img = img.astype(np.float32)
+    h, w = img.shape
+    if w < config.MODEL.IMAGE_SIZE.W:
+        print("长度{0}不够".format(w))
+        newImage = np.zeros((h, config.MODEL.IMAGE_SIZE.W), dtype='uint8')
+        newImage[:] = 255
+        newImage[:, :w] = np.array(img)
+        img = newImage
+
     img = (img / 255. - config.DATASET.MEAN) / config.DATASET.STD
-    img = img.transpose([2, 0, 1])
+    img = img.astype(np.float32)
+
     img = torch.from_numpy(img)
 
     img = img.to(device)
-    img = img.view(1, *img.size())
+    img = img.view(1, 1, *img.size())
     model.eval()
     preds = model(img)
     print(preds.shape)
@@ -68,7 +75,7 @@ if __name__ == '__main__':
 
     model = crnn.get_crnn(config).to(device)
     print('loading pretrained model from {0}'.format(args.checkpoint))
-    checkpoint = torch.load(args.checkpoint)
+    checkpoint = torch.load(args.checkpoint, map_location=device)
     if 'state_dict' in checkpoint.keys():
         model.load_state_dict(checkpoint['state_dict'])
     else:
