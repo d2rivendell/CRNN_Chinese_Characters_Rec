@@ -1,37 +1,29 @@
 from __future__ import print_function, absolute_import
 import torch.utils.data as data
 import numpy as np
-import cv2
+from PIL import Image
 
 class _OWN(data.Dataset):
-    def __init__(self, config, jpgPaths):
-
+    def __init__(self, config, jpgpaths):
         self.root = config.DATASET.ROOT
-        self.jpgPaths = jpgPaths
+        self.jpgpaths = jpgpaths
         self.dataset_name = config.DATASET.DATASET
-
-        self.mean = np.array(config.DATASET.MEAN, dtype=np.float32)
-        self.std = np.array(config.DATASET.STD, dtype=np.float32)
-
-        char_file = config.DATASET.CHAR_FILE
-        with open(char_file, 'rb') as file:
-            self.char_dict = {num: char.strip().decode('gbk', 'ignore') for num, char in enumerate(file.readlines())}
-        self.label = ""
-        print("load {} images!".format(len(jpgPaths)))
+        self.config = config
+        print("load {} images!".format(len(jpgpaths)))
 
     def __len__(self):
-        return len(self.jpgPaths)
+        return len(self.jpgpaths)
 
     def __getitem__(self, idx):
-        img_path = self.jpgPaths[idx]
-        img = cv2.imread(img_path)
+        img_path = self.jpgpaths[idx]
+        img = Image.open(img_path).convert('L')
         text_path = img_path.replace('.jpg', '.txt')
         with open(text_path, 'r', encoding='utf-8') as file:
-            contents = file.readlines()[0]
-            self.label = contents
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = img.astype(np.float32)
-        return (img, self.label)
+            label = file.readlines()[0].replace(' ', '')
+        # 排除掉训练集中存在一些不在字符表中生僻字
+        label = ''.join([x for x in label if x in self.config.DATASET.ALPHABETS])
+        assert (len(label) > 0)
+        return (img, label)
 
 
 

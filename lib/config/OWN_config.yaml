@@ -1,5 +1,5 @@
 GPUID: 0
-WORKERS: 0
+WORKERS: 1
 PRINT_FREQ: 10
 SAVE_FREQ: 10
 PIN_MEMORY: False
@@ -12,9 +12,9 @@ CUDNN:
 
 DATASET:
   DATASET: OWN
-  ROOT: "D:/ML/data/OCR/ocr-data (github.com-chineseocr)"
+  ROOT: "C:/data/train/ocr/chinesocr"
   CHAR_FILE: 'lib/dataset/txt/char_std_5990.txt'
-  BASE_DIR: ["handsignature"]
+  BASE_DIR: ["line"]
   SCALE_FACTOR: 0.25
   ROT_FACTOR: 30
   STD: 0.193
@@ -39,9 +39,9 @@ TRAIN:
   RMSPROP_ALPHA:
   RMSPROP_CENTERED:
   FINETUNE:
-    IS_FINETUNE: true
+    IS_FINETUNE: false
     FINETUNE_CHECKPOINIT: 'output/checkpoints/mixed_second_finetune_acc_97P7.pth'
-    FREEZE: true
+    FREEZE: false
 
 TEST:
   BATCH_SIZE_PER_GPU: 16

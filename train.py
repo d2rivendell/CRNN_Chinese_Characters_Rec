@@ -10,6 +10,7 @@ import lib.utils.utils as utils
 from lib.dataset import get_dataset
 from lib.core import function
 import lib.config.alphabets as alphabets
+import lib.config.keys as alphabetsKeys
 from lib.utils.utils import model_info
 from lib.dataset.AlignCollate import AlignCollate
 from tensorboardX import SummaryWriter
@@ -29,9 +30,9 @@ def parse_arg():
         # config = yaml.load(f)
         config = edict(config)
 
-    config.DATASET.ALPHABETS = alphabets.alphabet
+    config.DATASET.ALPHABETS = alphabetsKeys.alphabetChinese#alphabets.alphabet
     config.MODEL.NUM_CLASSES = len(config.DATASET.ALPHABETS)
-
+    print("字符表个数{}".format(config.MODEL.NUM_CLASSES))
     return config
 
 def main():
@@ -136,6 +137,9 @@ def main():
         collate_fn=AlignCollate(config, config.MODEL.IMAGE_SIZE.H, config.MODEL.IMAGE_SIZE.W),
     )
 
+    # from testUnit.testUnit import testImage
+    # testImage(train_loader)
+    # return
     best_acc = 0.5
     converter = utils.strLabelConverter(config.DATASET.ALPHABETS)
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):

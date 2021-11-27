@@ -74,12 +74,8 @@ class strLabelConverter(object):
         ignore_case (bool, default=True): whether or not to ignore all of the case.
     """
 
-    def __init__(self, alphabet, ignore_case=False):
-        self._ignore_case = ignore_case
-        if self._ignore_case:
-            alphabet = alphabet.lower()
+    def __init__(self, alphabet):
         self.alphabet = alphabet + '-'  # for `-1` index
-
         self.dict = {}
         for i, char in enumerate(alphabet):
             # NOTE: 0 is reserved for 'blank' required by wrap_ctc

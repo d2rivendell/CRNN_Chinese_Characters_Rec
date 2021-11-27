@@ -82,10 +82,10 @@ def validate(config, val_loader, dataset, converter, model, criterion, device, e
 
     n_correct = 0
     with torch.no_grad():
-        for i, (inp, idx) in enumerate(val_loader):
+        for i, (images, labels) in enumerate(val_loader):
 
-            labels = utils.get_batch_label(dataset, idx)
-            inp = inp.to(device)
+            # labels = utils.get_batch_label(dataset, idx)
+            inp = images.to(device)
 
             # inference
             preds = model(inp).cpu()
