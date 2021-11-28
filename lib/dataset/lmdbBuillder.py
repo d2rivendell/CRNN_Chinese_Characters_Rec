@@ -69,12 +69,11 @@ def createDataset(outputPath, imagePathList, labelList, map_size, lexiconList=No
     cache = {}
     cnt = 0
     for i in range(nSamples):
-        print(cnt)
         imagePath = imagePathList[i].replace('\n', '').replace('\r\n', '')
         # print(imagePath)
         text_path = labelList[i]
         with open(text_path, 'r', encoding='utf-8') as file:
-            label = file.read().replace(' ', '')
+            label = file.read().replace(' ', '').replace('\r\n', '').replace('\n', '')
         # if not os.path.exists(imagePath):
         #     print('%s does not exist' % imagePath)
         #     continue
@@ -96,7 +95,7 @@ def createDataset(outputPath, imagePathList, labelList, map_size, lexiconList=No
         if lexiconList:
             lexiconKey = 'lexicon-%09d' % cnt
             cache[lexiconKey] = ' '.join(lexiconList[i])
-        if cnt != 0 and cnt % 1000 == 0:
+        if cnt != 0 and cnt % 10000 == 0:
             writeCache(env, cache)
             cache = {}
             print('Written %d / %d' % (cnt, nSamples))
@@ -105,7 +104,7 @@ def createDataset(outputPath, imagePathList, labelList, map_size, lexiconList=No
     cache['num-samples'] = cnt
     writeCache(env, cache)
     env.close()
-    print('Created dataset with %d samples' % nSamples)
+    print('Created dataset with %d samples' % cnt)
 
 
 def checkImgPath(path):
