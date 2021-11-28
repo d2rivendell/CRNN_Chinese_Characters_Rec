@@ -19,7 +19,7 @@ class _OWN(data.Dataset):
         img = Image.open(img_path).convert('L')
         text_path = img_path.replace('.jpg', '.txt')
         with open(text_path, 'r', encoding='utf-8') as file:
-            label = file.readlines()[0].replace(' ', '')
+            label = file.read().replace(' ', '')
         # 排除掉训练集中存在一些不在字符表中生僻字
         label = ''.join([x for x in label if x in self.config.DATASET.ALPHABETS])
         assert (len(label) > 0)

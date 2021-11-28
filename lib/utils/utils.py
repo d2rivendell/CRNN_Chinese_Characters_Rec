@@ -148,6 +148,10 @@ def get_char_dict(path):
     with open(path, 'rb') as file:
         char_dict = {num: char.strip().decode('gbk', 'ignore') for num, char in enumerate(file.readlines())}
 
+def loadData(v, data):
+    with torch.no_grad():
+        v.resize_(data.size()).copy_(data)
+
 def model_info(model):  # Plots a line-by-line description of a PyTorch model
     n_p = sum(x.numel() for x in model.parameters())  # number parameters
     n_g = sum(x.numel() for x in model.parameters() if x.requires_grad)  # number gradients

@@ -43,6 +43,14 @@ def main():
     # create output folder
     output_dict = utils.create_log_folder(config, phase='train')
 
+    all_list = getData(config)
+
+    from lib.utils.preprocessing import preparedata, excludeImage
+    # 第一次跑一次就可以
+    # preparedata(all_list, config, add_new_chars=True)
+    # return
+    # excludeImage(all_list, ratio=30)
+    # return
     # cudnn
     cudnn.benchmark = config.CUDNN.BENCHMARK
     cudnn.deterministic = config.CUDNN.DETERMINISTIC
@@ -114,7 +122,6 @@ def main():
             model.load_state_dict(checkpoint)
 
     model_info(model)
-    all_list = getData(config)
 
     trainP, testP = train_test_split(all_list, test_size=0.1)  ##此处未考虑字符平衡划分
     train_dataset = _OWN(config, trainP)
@@ -142,12 +149,24 @@ def main():
     # return
     best_acc = 0.5
     converter = utils.strLabelConverter(config.DATASET.ALPHABETS)
+
+    imageTensor = torch.FloatTensor(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE.H, config.MODEL.IMAGE_SIZE.H)
+    textTensor = torch.IntTensor(config.TRAIN.BATCH_SIZE_PER_GPU * 5)
+    lengthTensor = torch.IntTensor(config.TRAIN.BATCH_SIZE_PER_GPU)
+
+    # imageTensor.to(device)
+    # textTensor.to(device)
+    # lengthTensor.to(device)
+    if torch.cuda.is_available():
+        model.cuda()
+        imageTensor = imageTensor.cuda()
+        criterion = criterion.cuda()
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
 
-        function.train(config, train_loader, train_dataset, converter, model, criterion, optimizer, device, epoch, writer_dict, output_dict)
+        function.train(config, train_loader, train_dataset, converter, model, criterion, optimizer, device, epoch, imageTensor, textTensor, lengthTensor, writer_dict)
         lr_scheduler.step()
 
-        acc = function.validate(config, val_loader, val_dataset, converter, model, criterion, device, epoch, writer_dict, output_dict)
+        acc = function.validate(config, val_loader, val_dataset, converter, model, criterion, device, epoch, imageTensor, textTensor, lengthTensor, writer_dict, output_dict)
 
         is_best = acc > best_acc
         best_acc = max(acc, best_acc)
@@ -164,7 +183,6 @@ def main():
                 "best_acc": best_acc,
             },  os.path.join(output_dict['chs_dir'], "checkpoint_{}_acc_{:.4f}.pth".format(epoch, acc))
         )
-
     writer_dict['writer'].close()
 
 if __name__ == '__main__':
