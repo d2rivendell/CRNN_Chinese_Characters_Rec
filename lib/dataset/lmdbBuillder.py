@@ -146,6 +146,39 @@ def creatDB(args):
     print("picture count:{}".format(len(imgPathList)))
     createDataset(args.save_dir, imgPathList, labelList, args.map_size)
 
+def create_label(args):
+    lmdbPath = args.save_dir
+    env = lmdb.open(
+        lmdbPath,
+        max_readers=1,
+        readonly=True,
+        lock=False,
+        readahead=False,
+        meminit=False)
+    label_key = 'num-samples'
+    with env.begin(write=False) as txn:
+       num = txn.get(label_key.encode())
+    num = int(num.decode(encoding='utf-8'))
+    print("樣本個數{}".format(num))
+    all = set()
+    for i in range(num+1):
+        index = i
+        with env.begin(write=False) as txn:
+            label_key = 'label-%09d' % index
+            label = txn.get(label_key.encode())
+            label = label.decode(encoding='utf-8')
+            for char in label:
+                all.add(char)
+            # print("{0}: {1}".format(index, label.decode(encoding='utf-8')))
+            if i % 100000 == 0:
+                print(i)
+    alphabets = ''.join(all)
+    cur_path = os.getcwd()
+    dst = os.path.join(cur_path, 'alphabets.txt')
+    with open(dst, 'w', encoding='utf-8') as f:
+        f.write(alphabets)
+    print("長度{}".format(len(alphabets)))
+
 if __name__ == '__main__':
     args = init_args()
     creatDB(args)

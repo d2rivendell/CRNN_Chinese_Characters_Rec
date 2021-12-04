@@ -116,7 +116,7 @@ def main():
 
     # 數據
     num_samples = utils.get_num_samples(config.DATASET.LMDB_PATH)
-    indexs = list(range(0, 3000))
+    indexs = list(range(0, num_samples))
     trainIdxs, testIndexs = train_test_split(indexs, test_size=0.1)  ##此处未考虑字符平衡划分
     train_sampler = RandomSampler(trainIdxs)
     test_sampler = RandomSampler(testIndexs)
@@ -151,23 +151,13 @@ def main():
     best_acc = 0.5
     converter = utils.strLabelConverter(config.DATASET.ALPHABETS)
 
-    imageTensor = torch.FloatTensor(config.TRAIN.BATCH_SIZE_PER_GPU, 3, config.MODEL.IMAGE_SIZE.H, config.MODEL.IMAGE_SIZE.H)
-    textTensor = torch.IntTensor(config.TRAIN.BATCH_SIZE_PER_GPU * 5)
-    lengthTensor = torch.IntTensor(config.TRAIN.BATCH_SIZE_PER_GPU)
 
-    # imageTensor.to(device)
-    # textTensor.to(device)
-    # lengthTensor.to(device)
-    if torch.cuda.is_available():
-        model.cuda()
-        imageTensor = imageTensor.cuda()
-        criterion = criterion.cuda()
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
 
-        function.train(config, train_loader, train_dataset, converter, model, criterion, optimizer, device, epoch, imageTensor, textTensor, lengthTensor, writer_dict)
+        function.train(config, train_loader, train_dataset, converter, model, criterion, optimizer, device, epoch, writer_dict)
         lr_scheduler.step()
 
-        acc = function.validate(config, val_loader, val_dataset, converter, model, criterion, device, epoch, imageTensor, textTensor, lengthTensor, writer_dict, output_dict)
+        acc = function.validate(config, val_loader, val_dataset, converter, model, criterion, device, epoch, writer_dict, output_dict)
 
         is_best = acc > best_acc
         best_acc = max(acc, best_acc)

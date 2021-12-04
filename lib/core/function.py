@@ -24,7 +24,7 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
-def train(config, train_loader, dataset, converter, model, criterion, optimizer, device, epoch, image_tensor, text_tensor, length_tensor, writer_dict=None):
+def train(config, train_loader, dataset, converter, model, criterion, optimizer, device, epoch, writer_dict=None):
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -38,24 +38,22 @@ def train(config, train_loader, dataset, converter, model, criterion, optimizer,
         # measure data time
         data_time.update(time.time() - end)
 
-        utils.loadData(image_tensor, images)
         try:
+            images = images.to(device)
             # inference
-            preds = model(image_tensor).cpu()
+            preds = model(images).cpu()
 
             # compute loss
-            batch_size = image_tensor.size(0)
+            batch_size = images.size(0)
             text, length = converter.encode(labels)                    # length = 一个batch中的总字符长度, text = 一个batch中的字符所对应的下标
-            utils.loadData(text_tensor, text)
-            utils.loadData(length_tensor, length)
             preds_size = torch.IntTensor([preds.size(0)] * batch_size) # timestep * batchsize
-            loss = criterion(preds, text_tensor, preds_size, length_tensor)
+            loss = criterion(preds, text, preds_size, length)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            losses.update(loss.item(), image_tensor.size(0))
+            losses.update(loss.item(), images.size(0))
 
             batch_time.update(time.time()-end)
             batchs += len(images)
@@ -66,7 +64,7 @@ def train(config, train_loader, dataset, converter, model, criterion, optimizer,
                     'Data {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
                     'Loss {loss.val:.5f} ({loss.avg:.5f})\t'.format(
                         epoch, batchs, len(dataset), batch_time=batch_time,
-                        speed=image_tensor.size(0)/batch_time.val,
+                        speed=images.size(0)/batch_time.val,
                         data_time=data_time, loss=losses)
                 print(msg)
 
@@ -85,7 +83,7 @@ def train(config, train_loader, dataset, converter, model, criterion, optimizer,
         end = time.time()
 
 
-def validate(config, val_loader, dataset, converter, model, criterion, device, epoch, image_tensor, text_tensor, length_tensor, writer_dict, output_dict):
+def validate(config, val_loader, dataset, converter, model, criterion, device, epoch,  writer_dict, output_dict):
 
     losses = AverageMeter()
     model.eval()
@@ -95,21 +93,18 @@ def validate(config, val_loader, dataset, converter, model, criterion, device, e
     with torch.no_grad():
         for i, (images, labels) in enumerate(val_loader):
 
-            utils.loadData(image_tensor, images)
-
+            images = images.to(device)
             # inference
-            preds = model(image_tensor).cpu()
+            preds = model(images).cpu()
 
             # compute loss
-            batch_size = image_tensor.size(0)
+            batch_size = images.size(0)
             text, length = converter.encode(labels)
-            utils.loadData(text_tensor, text)
-            utils.loadData(length_tensor, length)
 
             preds_size = torch.IntTensor([preds.size(0)] * batch_size)
-            loss = criterion(preds, text_tensor, preds_size, length_tensor)
+            loss = criterion(preds, text, preds_size, length)
 
-            losses.update(loss.item(), image_tensor.size(0))
+            losses.update(loss.item(), images.size(0))
 
             _, preds = preds.max(2)
             preds = preds.transpose(1, 0).contiguous().view(-1)
