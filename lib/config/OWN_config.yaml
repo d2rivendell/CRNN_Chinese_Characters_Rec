@@ -1,5 +1,5 @@
 GPUID: 0
-WORKERS: 1
+WORKERS: 0
 PRINT_FREQ: 10
 SAVE_FREQ: 10
 PIN_MEMORY: False
@@ -12,17 +12,15 @@ CUDNN:
 
 DATASET:
   DATASET: OWN
-  ROOT: "C:/data/train/ocr/chinesocr"
-  CHAR_FILE: 'lib/dataset/txt/char_std_5990.txt'
-  BASE_DIR: ["line"]
+  LMDB_PATH: 'C:\lmdb'
   SCALE_FACTOR: 0.25
   ROT_FACTOR: 30
   STD: 0.193
   MEAN: 0.588
-  ALPHABETS: ''
+  ALPHABETS: 'lib/config/alphabets-12295.txt'
 
 TRAIN:
-  BATCH_SIZE_PER_GPU: 24
+  BATCH_SIZE_PER_GPU: 18
   SHUFFLE: True
   BEGIN_EPOCH: 0
   END_EPOCH: 100

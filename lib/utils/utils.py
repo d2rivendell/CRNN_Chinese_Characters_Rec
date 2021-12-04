@@ -144,6 +144,21 @@ class strLabelConverter(object):
                 index += l
             return texts
 
+def get_num_samples(lmdb_path):
+    import lmdb
+    env = lmdb.open(
+        lmdb_path,
+        max_readers=1,
+        readonly=True,
+        lock=False,
+        readahead=False,
+        meminit=False)
+    key = 'num-samples'
+    with env.begin(write=False) as txn:
+       num = txn.get(key.encode())
+    env.close()
+    return int(num.decode(encoding='utf-8'))
+
 def get_char_dict(path):
     with open(path, 'rb') as file:
         char_dict = {num: char.strip().decode('gbk', 'ignore') for num, char in enumerate(file.readlines())}

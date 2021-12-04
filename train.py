@@ -4,10 +4,9 @@ import yaml
 import os
 import torch
 import torch.backends.cudnn as cudnn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, RandomSampler
 import lib.models.crnn as crnn
 import lib.utils.utils as utils
-from lib.dataset import get_dataset
 from lib.core import function
 import lib.config.alphabets as alphabets
 import lib.config.keys as alphabetsKeys
@@ -15,7 +14,7 @@ from lib.utils.utils import model_info
 from lib.dataset.AlignCollate import AlignCollate
 from tensorboardX import SummaryWriter
 from sklearn.model_selection import train_test_split
-from lib.dataset.dataProcessor import getData
+from lib.dataset.DynamicBatchSampler import DynamicBatchSampler
 from lib.dataset._own import _OWN
 
 def parse_arg():
@@ -29,8 +28,9 @@ def parse_arg():
         config = yaml.load(f, Loader=yaml.FullLoader)
         # config = yaml.load(f)
         config = edict(config)
-
-    config.DATASET.ALPHABETS = alphabetsKeys.alphabetChinese#alphabets.alphabet
+    with open(config.DATASET.ALPHABETS, 'r', encoding='utf-8') as file:
+        config.DATASET.ALPHABETS = file.read().replace(' ', '').replace('\r\n', '').replace('\n', '')
+    # config.DATASET.ALPHABETS = alphabetsKeys.alphabetChinese
     config.MODEL.NUM_CLASSES = len(config.DATASET.ALPHABETS)
     print("字符表个数{}".format(config.MODEL.NUM_CLASSES))
     return config
@@ -43,15 +43,6 @@ def main():
     # create output folder
     output_dict = utils.create_log_folder(config, phase='train')
 
-    all_list = getData(config)
-
-    from lib.utils.preprocessing import preparedata, excludeImage
-    # 第一次跑一次就可以
-    # preparedata(all_list, config, add_new_chars=True)
-    # return
-    # excludeImage(all_list, ratio=30)
-    # return
-    # cudnn
     cudnn.benchmark = config.CUDNN.BENCHMARK
     cudnn.deterministic = config.CUDNN.DETERMINISTIC
     cudnn.enabled = config.CUDNN.ENABLED
@@ -123,25 +114,35 @@ def main():
 
     model_info(model)
 
-    trainP, testP = train_test_split(all_list, test_size=0.1)  ##此处未考虑字符平衡划分
-    train_dataset = _OWN(config, trainP)
-    val_dataset = _OWN(config, testP)
+    # 數據
+    num_samples = utils.get_num_samples(config.DATASET.LMDB_PATH)
+    indexs = list(range(0, 3000))
+    trainIdxs, testIndexs = train_test_split(indexs, test_size=0.1)  ##此处未考虑字符平衡划分
+    train_sampler = RandomSampler(trainIdxs)
+    test_sampler = RandomSampler(testIndexs)
+
+    train_dataset = _OWN(config, trainIdxs)
+    val_dataset = _OWN(config, testIndexs)
+
+    # padding 比例不高于10%,  max_tokens = batch_size * ratio = 64 * 5 即假设图片为32 * 160 batch size为64
+    train_sampler = DynamicBatchSampler(train_sampler, train_dataset.get_image_ratio, num_buckets=200, min_size=1, max_size=112,
+                                          max_tokens=320, max_sentences=50)
+    val_sampler = DynamicBatchSampler(test_sampler, val_dataset.get_image_ratio, num_buckets=200, min_size=1, max_size=112,
+                                        max_tokens=320, max_sentences=50)
     train_loader = DataLoader(
         dataset=train_dataset,
-        batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
-        shuffle=config.TRAIN.SHUFFLE,
         num_workers=config.WORKERS,
         pin_memory=config.PIN_MEMORY,
         collate_fn=AlignCollate(config, config.MODEL.IMAGE_SIZE.H, config.MODEL.IMAGE_SIZE.W),
+        batch_sampler=train_sampler
     )
 
     val_loader = DataLoader(
         dataset=val_dataset,
-        batch_size=config.TEST.BATCH_SIZE_PER_GPU,
-        shuffle=config.TEST.SHUFFLE,
         num_workers=config.WORKERS,
         pin_memory=config.PIN_MEMORY,
         collate_fn=AlignCollate(config, config.MODEL.IMAGE_SIZE.H, config.MODEL.IMAGE_SIZE.W),
+        batch_sampler=val_sampler,
     )
 
     # from testUnit.testUnit import testImage

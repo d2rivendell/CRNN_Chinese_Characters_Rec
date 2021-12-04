@@ -8,6 +8,10 @@ import numpy as np
 import imghdr
 import argparse
 
+"""
+将训练数据图片数据，标签数据，宽高比数据存入LMDB中
+
+"""
 def init_args():
     args = argparse.ArgumentParser()
     args.add_argument('-i',
@@ -30,17 +34,17 @@ def init_args():
 
 def checkImageIsValid(imageBin):
     if imageBin is None:
-        return False
+        return (False, 0)
     try:
         imageBuf = np.frombuffer(imageBin, dtype=np.uint8)
         img = cv2.imdecode(imageBuf, cv2.IMREAD_GRAYSCALE)
         imgH, imgW = img.shape[0], img.shape[1]
     except:
-        return False
+        return (False, 0)
     else:
         if imgH * imgW == 0:
-            return False
-    return True
+            return (False, 0)
+    return (True, format(imgW / imgH, '.1f'))
 
 
 def writeCache(env, cache):
@@ -82,12 +86,15 @@ def createDataset(outputPath, imagePathList, labelList, map_size, lexiconList=No
             imageBin = f.read()
 
         if checkValid:
-            if not checkImageIsValid(imageBin):
+            valid, ratio = checkImageIsValid(imageBin)
+            if not valid:
                 print('%s is not a valid image' % imagePath)
                 continue
             if len(label) == 0:
                 print('%s is not a valid label' % text_path)
                 continue
+            ratioKey = 'ratio-%09d' % cnt
+            cache[ratioKey] = ratio
         imageKey = 'image-%09d' % cnt
         labelKey = 'label-%09d' % cnt
         cache[imageKey] = imageBin
@@ -95,13 +102,13 @@ def createDataset(outputPath, imagePathList, labelList, map_size, lexiconList=No
         if lexiconList:
             lexiconKey = 'lexicon-%09d' % cnt
             cache[lexiconKey] = ' '.join(lexiconList[i])
-        if cnt != 0 and cnt % 10000 == 0:
+        if cnt != 0 and cnt % 1000 == 0:
             writeCache(env, cache)
             cache = {}
             print('Written %d / %d' % (cnt, nSamples))
         cnt += 1
 
-    cache['num-samples'] = cnt
+    cache['num-samples'] = str(cnt)
     writeCache(env, cache)
     env.close()
     print('Created dataset with %d samples' % cnt)

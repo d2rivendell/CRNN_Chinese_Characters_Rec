@@ -25,3 +25,4 @@ def testImage(train_loader):
           showImage(imgs[i], labels[i])
         else:
           showImage(torchvision.utils.make_grid(imgs[i]), labels[i])
+

@@ -21,15 +21,11 @@ class AlignCollate(object):
         self.min_ratio = min_ratio
 
     def __call__(self, batch):
-        images, labels = zip(*batch)
-
+        images, labels, ratios = zip(*batch)
+        ratios = list(ratios)
         imgH = self.imgH
         imgW = self.imgW
         if self.keep_ratio:
-            ratios = []
-            for image in images:
-                w, h = image.size
-                ratios.append(w / float(h))
             ratios.sort()
             max_ratio = ratios[-1] # 同个批次的图像的最大宽高比
             imgW = int(np.floor(max_ratio * imgH)) # 宽度取到最宽的（下面resizeNormalize会对宽度不足imgW的图片进行填充）

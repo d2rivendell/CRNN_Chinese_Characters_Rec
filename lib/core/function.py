@@ -33,6 +33,7 @@ def train(config, train_loader, dataset, converter, model, criterion, optimizer,
     model.train()
 
     end = time.time()
+    batchs = 0
     for i, (images, labels) in enumerate(train_loader):
         # measure data time
         data_time.update(time.time() - end)
@@ -57,13 +58,14 @@ def train(config, train_loader, dataset, converter, model, criterion, optimizer,
             losses.update(loss.item(), image_tensor.size(0))
 
             batch_time.update(time.time()-end)
+            batchs += len(images)
             if i % config.PRINT_FREQ == 0:
                 msg = 'Epoch: [{0}][{1}/{2}]\t' \
                     'Time {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
                     'Speed {speed:.1f} samples/s\t' \
                     'Data {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
                     'Loss {loss.val:.5f} ({loss.avg:.5f})\t'.format(
-                        epoch, i, len(train_loader), batch_time=batch_time,
+                        epoch, batchs, len(dataset), batch_time=batch_time,
                         speed=image_tensor.size(0)/batch_time.val,
                         data_time=data_time, loss=losses)
                 print(msg)
@@ -89,6 +91,7 @@ def validate(config, val_loader, dataset, converter, model, criterion, device, e
     model.eval()
 
     n_correct = 0
+    batchs = 0
     with torch.no_grad():
         for i, (images, labels) in enumerate(val_loader):
 
@@ -114,9 +117,9 @@ def validate(config, val_loader, dataset, converter, model, criterion, device, e
             for pred, target in zip(sim_preds, labels):
                 if pred == target:
                     n_correct += 1
-
+            batchs += len(images)
             if (i + 1) % config.PRINT_FREQ == 0:
-                print('Epoch: [{0}][{1}/{2}]'.format(epoch, i, len(val_loader)))
+                print('Epoch: [{0}][{1}/{2}]'.format(epoch, batchs, len(dataset)))
 
             if i == config.TEST.NUM_TEST_BATCH:
                 break
