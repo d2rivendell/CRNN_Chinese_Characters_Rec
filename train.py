@@ -16,6 +16,8 @@ from tensorboardX import SummaryWriter
 from sklearn.model_selection import train_test_split
 from lib.dataset.DynamicBatchSampler import DynamicBatchSampler
 from lib.dataset._own import _OWN
+import random
+from torch_baidu_ctc import CTCLoss
 
 def parse_arg():
     parser = argparse.ArgumentParser(description="train crnn")
@@ -26,11 +28,10 @@ def parse_arg():
 
     with open(args.cfg, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-        # config = yaml.load(f)
         config = edict(config)
     with open(config.DATASET.ALPHABETS, 'r', encoding='utf-8') as file:
         config.DATASET.ALPHABETS = file.read().replace(' ', '').replace('\r\n', '').replace('\n', '')
-    # config.DATASET.ALPHABETS = alphabetsKeys.alphabetChinese
+    # config.DATASET.ALPHABETS = alphabets.alphabet
     config.MODEL.NUM_CLASSES = len(config.DATASET.ALPHABETS)
     print("字符表个数{}".format(config.MODEL.NUM_CLASSES))
     return config
@@ -66,20 +67,24 @@ def main():
     model = model.to(device)
 
     # define loss function
-    criterion = torch.nn.CTCLoss()
+    criterion = torch.nn.CTCLoss(zero_infinity=True)
+    # criterion = CTCLoss(reduction='mean')
+
+    if config.CUDNN.CTCENABLE:
+       criterion = criterion.to(device)
 
     last_epoch = config.TRAIN.BEGIN_EPOCH
     optimizer = utils.get_optimizer(config, model)
-    if isinstance(config.TRAIN.LR_STEP, list):
-        lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer, config.TRAIN.LR_STEP,
-            config.TRAIN.LR_FACTOR, last_epoch-1
-        )
-    else:
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, config.TRAIN.LR_STEP,
-            config.TRAIN.LR_FACTOR, last_epoch - 1
-        )
+    # if isinstance(config.TRAIN.LR_STEP, list):
+    #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+    #         optimizer, config.TRAIN.LR_STEP,
+    #         config.TRAIN.LR_FACTOR, last_epoch-1
+    #     )
+    # else:
+    #     lr_scheduler = torch.optim.lr_scheduler.StepLR(
+    #         optimizer, config.TRAIN.LR_STEP,
+    #         config.TRAIN.LR_FACTOR, last_epoch - 1
+    #     )
 
     if config.TRAIN.FINETUNE.IS_FINETUNE:
         model_state_file = config.TRAIN.FINETUNE.FINETUNE_CHECKPOINIT
@@ -117,20 +122,24 @@ def main():
     # 數據
     num_samples = utils.get_num_samples(config.DATASET.LMDB_PATH)
     indexs = list(range(0, num_samples))
-    trainIdxs, testIndexs = train_test_split(indexs, test_size=0.1)  ##此处未考虑字符平衡划分
+
+    trainIdxs, testIndexs = train_test_split(indexs, test_size=0.1, random_state=1024)  ##此处未考虑字符平衡划分
+    # random.shuffle(trainIdxs)
+    trainIdxs = trainIdxs[:5500000]
     train_sampler = RandomSampler(trainIdxs)
     test_sampler = RandomSampler(testIndexs)
 
     train_dataset = _OWN(config, trainIdxs)
     val_dataset = _OWN(config, testIndexs)
 
-    # padding 比例不高于10%,  max_tokens = batch_size * ratio = 64 * 5 即假设图片为32 * 160 batch size为64
-    train_sampler = DynamicBatchSampler(train_sampler, train_dataset.get_image_ratio, num_buckets=200, min_size=1, max_size=112,
-                                          max_tokens=320, max_sentences=50)
-    val_sampler = DynamicBatchSampler(test_sampler, val_dataset.get_image_ratio, num_buckets=200, min_size=1, max_size=112,
-                                        max_tokens=320, max_sentences=50)
+    # padding 比例不高于10%,  max_tokens = batch_size * ratio = 100 * 5 即假设图片为32 * 160 batch 100
+    train_sampler = DynamicBatchSampler(train_sampler, train_dataset.get_image_ratio, num_buckets=120, min_size=2, max_size=37,
+                                          max_tokens=500, max_sentences=100)
+    val_sampler = DynamicBatchSampler(test_sampler, val_dataset.get_image_ratio, num_buckets=120, min_size=2, max_size=37,
+                                        max_tokens=500, max_sentences=100)
     train_loader = DataLoader(
         dataset=train_dataset,
+        shuffle=False,
         num_workers=config.WORKERS,
         pin_memory=config.PIN_MEMORY,
         collate_fn=AlignCollate(config, config.MODEL.IMAGE_SIZE.H, config.MODEL.IMAGE_SIZE.W),
@@ -139,6 +148,7 @@ def main():
 
     val_loader = DataLoader(
         dataset=val_dataset,
+        shuffle=False,
         num_workers=config.WORKERS,
         pin_memory=config.PIN_MEMORY,
         collate_fn=AlignCollate(config, config.MODEL.IMAGE_SIZE.H, config.MODEL.IMAGE_SIZE.W),
@@ -155,7 +165,7 @@ def main():
     for epoch in range(last_epoch, config.TRAIN.END_EPOCH):
 
         function.train(config, train_loader, train_dataset, converter, model, criterion, optimizer, device, epoch, writer_dict)
-        lr_scheduler.step()
+        # lr_scheduler.step()
 
         acc = function.validate(config, val_loader, val_dataset, converter, model, criterion, device, epoch, writer_dict, output_dict)
 

@@ -13,9 +13,9 @@ import argparse
 def parse_arg():
     parser = argparse.ArgumentParser(description="demo")
 
-    parser.add_argument('--cfg', help='experiment configuration filename', type=str, default='lib/config/360CC_config.yaml')
-    parser.add_argument('--image_path', type=str, default='images/test.png', help='the path to your image')
-    parser.add_argument('--checkpoint', type=str, default='output/checkpoints/mixed_second_finetune_acc_97P7.pth',
+    parser.add_argument('--cfg', help='experiment configuration filename', type=str, default='C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/lib/config/OWN_config.yaml')
+    parser.add_argument('--image_path', type=str, default='C:/Users/fander/Desktop/crnn_test_images/a-11.png', help='the path to your image')
+    parser.add_argument('--checkpoint', type=str, default='C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/output/OWN/crnn/2021-12-08-09-36/checkpoints/checkpoint_2_acc_0.4783.pth',
                         help='the path to your checkpoints')
 
     args = parser.parse_args()
@@ -24,7 +24,8 @@ def parse_arg():
         config = yaml.load(f)
         config = edict(config)
 
-    config.DATASET.ALPHABETS = alphabets.alphabet
+    with open(config.DATASET.ALPHABETS, 'r', encoding='utf-8') as file:
+        config.DATASET.ALPHABETS = file.read().replace(' ', '').replace('\r\n', '').replace('\n', '')
     config.MODEL.NUM_CLASSES = len(config.DATASET.ALPHABETS)
 
     return config, args
@@ -36,19 +37,6 @@ def recognition(config, img, model, converter, device):
     # fisrt step: resize the height and width of image to (32, x)
     img = cv2.resize(img, (0, 0), fx=config.MODEL.IMAGE_SIZE.H / h, fy=config.MODEL.IMAGE_SIZE.H / h, interpolation=cv2.INTER_CUBIC)
 
-    # second step: keep the ratio of image's text same with training
-    h, w = img.shape
-    w_cur = int(img.shape[1] / (config.MODEL.IMAGE_SIZE.OW / config.MODEL.IMAGE_SIZE.W))
-    img = cv2.resize(img, (0, 0), fx=w_cur / w, fy=1.0, interpolation=cv2.INTER_CUBIC)
-
-    # normalize
-    h, w = img.shape
-    if w < config.MODEL.IMAGE_SIZE.W:
-        print("长度{0}不够".format(w))
-        newImage = np.zeros((h, config.MODEL.IMAGE_SIZE.W), dtype='uint8')
-        newImage[:] = 255
-        newImage[:, :w] = np.array(img)
-        img = newImage
 
     img = (img / 255. - config.DATASET.MEAN) / config.DATASET.STD
     img = img.astype(np.float32)

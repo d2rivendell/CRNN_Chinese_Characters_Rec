@@ -41,12 +41,18 @@ def train(config, train_loader, dataset, converter, model, criterion, optimizer,
         try:
             images = images.to(device)
             # inference
-            preds = model(images).cpu()
-
-            # compute loss
+            if config.CUDNN.CTCENABLE:
+                preds = model(images)
+            else:
+                preds = model(images).cpu()
+            # compute loss(device)
             batch_size = images.size(0)
             text, length = converter.encode(labels)                    # length = 一个batch中的总字符长度, text = 一个batch中的字符所对应的下标
             preds_size = torch.IntTensor([preds.size(0)] * batch_size) # timestep * batchsize
+            # if config.CUDNN.CTCENABLE:
+              # text = text.to(device)
+              # length = length.to
+              # preds_size = preds_size.to(device)
             loss = criterion(preds, text, preds_size, length)
 
             optimizer.zero_grad()
@@ -95,13 +101,20 @@ def validate(config, val_loader, dataset, converter, model, criterion, device, e
 
             images = images.to(device)
             # inference
-            preds = model(images).cpu()
+            if config.CUDNN.CTCENABLE:
+                preds = model(images)
+            else:
+                preds = model(images).cpu()
 
             # compute loss
             batch_size = images.size(0)
             text, length = converter.encode(labels)
 
             preds_size = torch.IntTensor([preds.size(0)] * batch_size)
+            # if config.CUDNN.CTCENABLE:
+            #     text = text.to(device)
+            #     length = length.to(device)
+            #     preds_size = preds_size.to(device)
             loss = criterion(preds, text, preds_size, length)
 
             losses.update(loss.item(), images.size(0))
@@ -123,7 +136,7 @@ def validate(config, val_loader, dataset, converter, model, criterion, device, e
     for raw_pred, pred, gt in zip(raw_preds, sim_preds, labels):
         print('%-20s => %-20s, gt: %-20s' % (raw_pred, pred, gt))
 
-    num_test_sample = config.TEST.NUM_TEST_BATCH * config.TEST.BATCH_SIZE_PER_GPU
+    num_test_sample = batchs
     if num_test_sample > len(dataset):
         num_test_sample = len(dataset)
 

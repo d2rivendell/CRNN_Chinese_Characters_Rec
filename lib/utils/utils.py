@@ -30,6 +30,9 @@ def get_optimizer(config, model):
             # alpha=config.TRAIN.RMSPROP_ALPHA,
             # centered=config.TRAIN.RMSPROP_CENTERED
         )
+    elif config.TRAIN.OPTIMIZER == "adadelta":
+        optimizer = optim.Adadelta(filter(lambda p: p.requires_grad, model.parameters()),
+                                   lr=config.TRAIN.LR)
 
     return optimizer
 
@@ -75,7 +78,7 @@ class strLabelConverter(object):
     """
 
     def __init__(self, alphabet):
-        self.alphabet = alphabet + '-'  # for `-1` index
+        self.alphabet = alphabet + '☢'  # for `-1` index
         self.dict = {}
         for i, char in enumerate(alphabet):
             # NOTE: 0 is reserved for 'blank' required by wrap_ctc

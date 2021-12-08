@@ -38,7 +38,6 @@ class _OWN(data.Dataset):
             image = Image.open(buf).convert('L')
 
             ratio = txn.get(ration_key.encode('utf-8'))
-        # assert (len(label) > 0)
         return (image, label, float(ratio.decode(encoding='utf-8')))
 
     def get_image_ratio(self, idx):

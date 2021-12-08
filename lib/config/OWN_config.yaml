@@ -9,26 +9,27 @@ CUDNN:
   BENCHMARK: True
   DETERMINISTIC: False
   ENABLED: True
+  CTCENABLE: False
 
 DATASET:
   DATASET: OWN
   LMDB_PATH: 'C:\lmdb'
   SCALE_FACTOR: 0.25
   ROT_FACTOR: 30
-  STD: 0.193
-  MEAN: 0.588
+  STD: 0.28834516
+  MEAN: 0.57437575
   ALPHABETS: 'lib/config/alphabets-12295.txt'
 
 TRAIN:
-  BATCH_SIZE_PER_GPU: 18
+  BATCH_SIZE_PER_GPU: 32
   SHUFFLE: True
   BEGIN_EPOCH: 0
   END_EPOCH: 100
   RESUME:
-    IS_RESUME: False
-    FILE: ''
-  OPTIMIZER: 'adam'
-  LR: 0.0001
+    IS_RESUME: True
+    FILE: 'C:\Users\fander\Desktop\GitHub\CRNN_Chinese_Characters_Rec\output\OWN\crnn\2021-12-08-09-36(2)\checkpoints\checkpoint_2_acc_0.4783.pth'
+  OPTIMIZER: 'adadelta'
+  LR: 0.1
   WD: 0.0
   LR_STEP: [60, 80]
   LR_FACTOR: 0.1
@@ -45,13 +46,13 @@ TEST:
   BATCH_SIZE_PER_GPU: 16
   SHUFFLE: True  # for random test rather than test on the whole validation set
   NUM_TEST_BATCH: 1000
-  NUM_TEST_DISP: 10
+  NUM_TEST_DISP: 20
 
 MODEL:
   NAME: 'crnn'
   IMAGE_SIZE:
     W: 280
     H: 32
-  NUM_CLASSES: 0
+  NUM_CLASSES: 12296
   NUM_HIDDEN: 256
 

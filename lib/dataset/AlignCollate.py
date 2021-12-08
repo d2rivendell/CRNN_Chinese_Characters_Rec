@@ -73,5 +73,6 @@ class ResizeNormalize(object):
         else:
             img = img.resize((imgW, imgH), self.interpolation)
         img = transforms.ToTensor()(img)
+        # 对图片数据标准化https://zhuanlan.zhihu.com/p/35597976，mean和std的值通过 Test.compute_std_mean方法计算
         img.sub_(self.mean).div_(self.std)
         return img
