@@ -1,7 +1,7 @@
 from PIL import Image
 import torch
 import numpy as np
-from PIL import Image
+import cv2
 import torchvision.transforms as transforms
 
 class AlignCollate(object):
@@ -31,7 +31,7 @@ class AlignCollate(object):
             imgW = int(np.floor(max_ratio * imgH)) # 宽度取到最宽的（下面resizeNormalize会对宽度不足imgW的图片进行填充）
             imgW = max(imgH * self.min_ratio, imgW)  # assure imgH >= imgW
 
-        resizeNormalize = ResizeNormalize(self.config, (imgW, imgH))
+        resizeNormalize = ResizeNormalize(self.config, (imgH, imgW))
         # 注意在AlignCollate中返回的是张量，dataset类中返回的可以是numpy矩阵
         # resize再转成Tensor
         images = [resizeNormalize(image) for image in images]
@@ -42,7 +42,7 @@ class AlignCollate(object):
 
 class ResizeNormalize(object):
 
-    def __init__(self, config, size, interpolation=Image.BILINEAR):
+    def __init__(self, config, size, interpolation=cv2.INTER_CUBIC):
         """
         :param size: (h, w)
         :param interpolation:
@@ -57,22 +57,26 @@ class ResizeNormalize(object):
         :param img: PIL Image shape:(W,H)
         :return:
         """
-        imgW, imgH = self.size
+        imgH, imgW = self.size
         # 1. 对图片等比拉伸
-        scale = img.size[1]*1.0 / imgH
-        w     = img.size[0] / scale
-        w     = int(w)
-        img = img.resize((w, imgH), self.interpolation)
-        w, h  = img.size
+        scale = img.shape[0]*1.0 / imgH
+        w     = int(img.shape[1] / scale)
+
+        img   = cv2.resize(img, (w, imgH), interpolation=cv2.INTER_CUBIC)
+        h, w  = img.shape
         # 2. 若拉伸后的宽度达不到最大宽度，右边需要填充padding
         if w<=imgW:
             newImage       = np.zeros((imgH, imgW),dtype='uint8')
             newImage[:]    = 255
             newImage[:, :w] = np.array(img)
-            img            = Image.fromarray(newImage)
+            img            = newImage
         else:
-            img = img.resize((imgW, imgH), self.interpolation)
-        img = transforms.ToTensor()(img)
+            img = cv2.resize(img, (imgW, imgH), self.interpolation)
         # 对图片数据标准化https://zhuanlan.zhihu.com/p/35597976，mean和std的值通过 Test.compute_std_mean方法计算
-        img.sub_(self.mean).div_(self.std)
+        img = np.reshape(img, (imgH, imgW, 1))
+        img = img.astype(np.float32)
+        img = img.transpose([2, 0, 1])
+        img = (np.array(img) / 255.0 - self.mean) / self.std
+
+        img = torch.from_numpy(img)
         return img

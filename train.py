@@ -15,7 +15,7 @@ from lib.dataset.AlignCollate import AlignCollate
 from tensorboardX import SummaryWriter
 from sklearn.model_selection import train_test_split
 from lib.dataset.DynamicBatchSampler import DynamicBatchSampler
-from lib.dataset._own import _OWN
+from lib.dataset.own import OWN
 import random
 from torch_baidu_ctc import CTCLoss
 
@@ -123,20 +123,20 @@ def main():
     num_samples = utils.get_num_samples(config.DATASET.LMDB_PATH)
     indexs = list(range(0, num_samples))
 
-    trainIdxs, testIndexs = train_test_split(indexs, test_size=0.1, random_state=1024)  ##此处未考虑字符平衡划分
+    trainIdxs, testIndexs = train_test_split(indexs, test_size=0.01, random_state=1024)  ##此处未考虑字符平衡划分
     # random.shuffle(trainIdxs)
-    trainIdxs = trainIdxs[:5500000]
+    trainIdxs = trainIdxs[5500000:]
     train_sampler = RandomSampler(trainIdxs)
     test_sampler = RandomSampler(testIndexs)
 
-    train_dataset = _OWN(config, trainIdxs)
-    val_dataset = _OWN(config, testIndexs)
+    train_dataset = OWN(config, trainIdxs)
+    val_dataset = OWN(config, testIndexs)
 
-    # padding 比例不高于10%,  max_tokens = batch_size * ratio = 100 * 5 即假设图片为32 * 160 batch 100
-    train_sampler = DynamicBatchSampler(train_sampler, train_dataset.get_image_ratio, num_buckets=120, min_size=2, max_size=37,
-                                          max_tokens=500, max_sentences=100)
-    val_sampler = DynamicBatchSampler(test_sampler, val_dataset.get_image_ratio, num_buckets=120, min_size=2, max_size=37,
-                                        max_tokens=500, max_sentences=100)
+    # padding 比例不高于10%,  max_tokens = batch_size * ratio = 200 * 5 即假设图片为32 * 160 batch 200
+    train_sampler = DynamicBatchSampler(train_sampler, train_dataset.get_image_ratio, num_buckets=80, min_size=2, max_size=37,
+                                          max_tokens=1000, max_sentences=200)
+    val_sampler = DynamicBatchSampler(test_sampler, val_dataset.get_image_ratio, num_buckets=80, min_size=2, max_size=37,
+                                        max_tokens=1000, max_sentences=200)
     train_loader = DataLoader(
         dataset=train_dataset,
         shuffle=False,

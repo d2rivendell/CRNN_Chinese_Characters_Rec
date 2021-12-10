@@ -5,17 +5,18 @@ import torch
 from torch.autograd import Variable
 import lib.utils.utils as utils
 import lib.models.crnn as crnn
-import lib.config.alphabets as alphabets
+# from lib.dataset.dataProcessor import findImage
 import yaml
 from easydict import EasyDict as edict
 import argparse
+import os
  
 def parse_arg():
     parser = argparse.ArgumentParser(description="demo")
 
     parser.add_argument('--cfg', help='experiment configuration filename', type=str, default='C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/lib/config/OWN_config.yaml')
-    parser.add_argument('--image_path', type=str, default='C:/Users/fander/Desktop/crnn_test_images/a-11.png', help='the path to your image')
-    parser.add_argument('--checkpoint', type=str, default='C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/output/OWN/crnn/2021-12-08-09-36/checkpoints/checkpoint_2_acc_0.4783.pth',
+    parser.add_argument('--image_path', type=str, default='C:/Users/fander/Desktop/crnn_test_images', help='the path to your image')
+    parser.add_argument('--checkpoint', type=str, default='C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/output/OWN/crnn/2021-12-10-09-26(4)/checkpoints/checkpoint_4_acc_0.4865.pth',
                         help='the path to your checkpoints')
 
     args = parser.parse_args()
@@ -47,15 +48,26 @@ def recognition(config, img, model, converter, device):
     img = img.view(1, 1, *img.size())
     model.eval()
     preds = model(img)
-    print(preds.shape)
+    # print(preds.shape)
     _, preds = preds.max(2)
     preds = preds.transpose(1, 0).contiguous().view(-1)
 
     preds_size = Variable(torch.IntTensor([preds.size(0)]))
     sim_pred = converter.decode(preds.data, preds_size.data, raw=False)
+    return sim_pred
 
-    print('results: {0}'.format(sim_pred))
 
+def checkImgPath(path):
+    return path.endswith(".jpg") or path.endswith(".png")
+
+def findImage(path):
+    walk = os.walk(os.path.normpath(path))
+    res = []
+    for path, dir_list, file_list in walk:
+        for file_name in file_list:
+            if checkImgPath(file_name):
+                res.append(os.path.join(path, file_name))
+    return res
 if __name__ == '__main__':
 
     config, args = parse_arg()
@@ -71,12 +83,14 @@ if __name__ == '__main__':
 
     started = time.time()
 
-    img = cv2.imread(args.image_path)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    converter = utils.strLabelConverter(config.DATASET.ALPHABETS)
-
-    recognition(config, img, model, converter, device)
-
+    pahts = findImage(args.image_path)
+    for path in pahts:
+        img = cv2.imread(path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        converter = utils.strLabelConverter(config.DATASET.ALPHABETS)
+        res = recognition(config, img, model, converter, device)
+        print('{0}:{1}'.format(os.path.split(path)[1], res))
     finished = time.time()
-    print('elapsed time: {0}'.format(finished - started))
+    print('elapsed time: {0}'.format((finished - started)/len(pahts)))
+
 
