@@ -27,7 +27,7 @@ TRAIN:
   END_EPOCH: 100
   RESUME:
     IS_RESUME: True
-    FILE: 'C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/output/OWN/crnn/2021-12-10-09-26(4)/checkpoints/checkpoint_4_acc_0.4865.pth'
+    FILE: 'C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/output/OWN/crnn/2021-12-11-10-27(5)/checkpoints/checkpoint_5_acc_0.5239.pth'
   OPTIMIZER: 'adadelta'
   LR: 0.1
   WD: 0.0

@@ -124,19 +124,20 @@ def main():
     indexs = list(range(0, num_samples))
 
     trainIdxs, testIndexs = train_test_split(indexs, test_size=0.01, random_state=1024)  ##此处未考虑字符平衡划分
-    # random.shuffle(trainIdxs)
-    trainIdxs = trainIdxs[5500000:]
+    random.seed(1)
+    random.shuffle(trainIdxs)
+    # trainIdxs = trainIdxs[5500000:]
     train_sampler = RandomSampler(trainIdxs)
     test_sampler = RandomSampler(testIndexs)
 
     train_dataset = OWN(config, trainIdxs)
     val_dataset = OWN(config, testIndexs)
 
-    # padding 比例不高于10%,  max_tokens = batch_size * ratio = 200 * 5 即假设图片为32 * 160 batch 200
-    train_sampler = DynamicBatchSampler(train_sampler, train_dataset.get_image_ratio, num_buckets=80, min_size=2, max_size=37,
-                                          max_tokens=1000, max_sentences=200)
-    val_sampler = DynamicBatchSampler(test_sampler, val_dataset.get_image_ratio, num_buckets=80, min_size=2, max_size=37,
-                                        max_tokens=1000, max_sentences=200)
+    # padding 比例不高于10%,  max_tokens = batch_size * ratio = 260 * 5 即假设图片为32 * 160 batch 260
+    train_sampler = DynamicBatchSampler(train_sampler, train_dataset.get_image_ratio, num_buckets=120, min_size=2, max_size=37,
+                                          max_tokens=1300, max_sentences=260)
+    val_sampler = DynamicBatchSampler(test_sampler, val_dataset.get_image_ratio, num_buckets=120, min_size=2, max_size=37,
+                                        max_tokens=1300, max_sentences=260)
     train_loader = DataLoader(
         dataset=train_dataset,
         shuffle=False,

@@ -16,7 +16,7 @@ def parse_arg():
 
     parser.add_argument('--cfg', help='experiment configuration filename', type=str, default='C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/lib/config/OWN_config.yaml')
     parser.add_argument('--image_path', type=str, default='C:/Users/fander/Desktop/crnn_test_images', help='the path to your image')
-    parser.add_argument('--checkpoint', type=str, default='C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/output/OWN/crnn/2021-12-10-09-26(4)/checkpoints/checkpoint_4_acc_0.4865.pth',
+    parser.add_argument('--checkpoint', type=str, default='C:/Users/fander/Desktop/GitHub/CRNN_Chinese_Characters_Rec/output/OWN/crnn/2021-12-11-10-27(5)/checkpoints/checkpoint_5_acc_0.5239.pth',
                         help='the path to your checkpoints')
 
     args = parser.parse_args()
